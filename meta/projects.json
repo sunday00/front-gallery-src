@@ -2,6 +2,17 @@
   {
     "projects": "20230116_01_BasicCrash",
     "title": "BasicCrash",
-    "description": "practice three js crash"
+    "description": "practice three js crash",
+    "tags": [
+      "vanilla", "practice", "solid"
+    ]
+  },
+  {
+    "projects": "20230117_02_BasicCrash2",
+    "title": "BasicCrash2",
+    "description": "practice three js crash",
+    "tags": [
+      "vanilla", "practice", "solid"
+    ]
   }
 ]

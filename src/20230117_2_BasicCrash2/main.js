@@ -79,8 +79,11 @@ function core()
 
     const box = new Box({size, color: config.defaultBoxColor})
     box.position.set(x, y, z)
+
     box.defaultPosition = {x, y, z}
     config.boxes.push(box)
+
+    box.position.z += window.scrollY / config.canvasHeight * 15
 
     back.scene.add(box)
   }
@@ -113,8 +116,7 @@ function scrollEvent() {
     if(c.type !== 'Mesh') continue
 
     c.position.z = c.defaultPosition.z
-      + (window.scrollY / config.canvasHeight)
-      * 15
+      + ( window.scrollY / config.canvasHeight * 15 )
   }
 }
 
@@ -132,8 +134,11 @@ function refreshBox(back) {
 
 function getIntersectsBetweenMouseAndBox(e, back) {
   back.mouse.x = (e.clientX  / window.innerWidth) * 2 - 1;
-  back.mouse.y = (- (e.clientY  / config.canvasHeight) * 2 + 1)
-    + (- (window.scrollY / config.canvasHeight) * 2 + 1) - 1;
+
+  back.mouse.y = (- (e.clientY / config.canvasHeight) * 2 + 1)
+    - (window.scrollY / window.innerHeight / 2)
+    + (window.scrollY / window.innerHeight / 2)
+  ;
 
   back.raycaster.setFromCamera(back.mouse, back.camera)
 
@@ -147,7 +152,7 @@ function animate(intersects) {
 
     const tl = new TimelineMax()
 
-    tl.to(o.scale, 1, {x: 2, ease: Expo.easeOut})
+    tl.to(o.scale, 1, {x: 1 + (1 - window.scrollY / window.innerHeight), ease: Expo.easeOut})
     tl.to(o.rotation, 1, {x: Math.PI * 0.5, ease: Expo.easeOut})
     tl.to(o.position, 1, {z: o.position.z + 1, ease: Expo.easeOut})
     tl.to(o.scale, 1, {x: 1, ease: Expo.easeOut})

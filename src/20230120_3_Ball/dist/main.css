@@ -7,17 +7,40 @@
 html,
 body
 {
-    height: 100vh;
-    font-family: 'Poppins';
+    /*height: 80vh;*/
+    /*font-family: 'Poppins', serif;*/
+    background-color: #292929;
+}
+
+body{
+    overflow-x: hidden;
 }
 
 .webgl
 {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     outline: none;
+    mix-blend-mode: exclusion;
 }
 
+.container {
+    margin-top: 20vh;
+    height: 60vh;
+    display: grid;
+    place-items: center;
+}
+
+h1 {
+    font-size: 8em;
+    text-transform: uppercase;
+    color: white;
+}
+
+article {
+    padding: 1.5em 3em;
+    color: white;
+}
 
 /*# sourceMappingURL=main.css.map*/

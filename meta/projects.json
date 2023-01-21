@@ -1,18 +1,23 @@
 [
   {
     "projects": "20230116_1_BasicCrash",
-    "title": "BasicCrash",
-    "description": "practice three js crash",
+    "description": "practice three js crash.",
     "tags": [
       "vanilla", "practice", "solid"
     ]
   },
   {
     "projects": "20230117_2_BasicCrash2",
-    "title": "BasicCrash2",
-    "description": "practice three js crash",
+    "description": "practice three js crash.",
     "tags": [
       "vanilla", "practice", "solid"
+    ]
+  },
+  {
+    "projects": "20230120_3_Ball",
+    "description": "practice three with gui, webpack.",
+    "tags": [
+      "webpack", "practice", "normalMap", "DatGui"
     ]
   }
 ]

@@ -19,5 +19,12 @@
     "tags": [
       "webpack", "practice", "normalMap", "DatGui"
     ]
+  },
+  {
+    "projects": "20230123_4_Particles",
+    "description": "practice three with particles, webpack.",
+    "tags": [
+      "webpack", "practice", "particle"
+    ]
   }
 ]

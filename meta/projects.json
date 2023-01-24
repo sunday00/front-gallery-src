@@ -26,5 +26,12 @@
     "tags": [
       "webpack", "practice", "particle"
     ]
+  },
+  {
+    "projects": "20230124_5_Terrain",
+    "description": "practice three with mapping via png files",
+    "tags": [
+      "webpack", "practice", "alphaMap", "heightMap"
+    ]
   }
 ]

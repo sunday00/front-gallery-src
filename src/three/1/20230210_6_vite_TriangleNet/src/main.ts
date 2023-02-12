@@ -1,19 +1,23 @@
 import './style.scss'
 import * as three from 'three'
 import {Pane} from "tweakpane";
-import {Mesh, MeshPhongMaterial, PlaneGeometry} from "three";
+import {Mesh, MeshPhongMaterial, PerspectiveCamera, PlaneGeometry, Scene, WebGLRenderer} from "three";
+import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 
 class Package {
+  private scene!: Scene;
+  private camera!: PerspectiveCamera;
+  private renderer!: WebGLRenderer;
   private mesh!: Mesh<PlaneGeometry, MeshPhongMaterial>;
 
   init() {
-    const scene = new three.Scene()
-    const camera = new three.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
-    const renderer = new three.WebGLRenderer()
+    this.scene = new three.Scene()
+    this.camera = new three.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
+    this.renderer = new three.WebGLRenderer()
 
-    renderer.setClearColor(new three.Color('#333333'))
-    renderer.setSize(window.innerWidth, window.innerHeight)
-    renderer.setPixelRatio(window.devicePixelRatio)
+    this.renderer.setClearColor(new three.Color('#333333'))
+    this.renderer.setSize(window.innerWidth, window.innerHeight)
+    this.renderer.setPixelRatio(window.devicePixelRatio)
 
     const geometry = new three.PlaneGeometry(5, 5, 10, 10)
     const material = new three.MeshPhongMaterial({
@@ -25,23 +29,48 @@ class Package {
 
     this.makePlaneSegmentsUnFlatten()
 
-    const light = new three.DirectionalLight('#FFFFFF', 1)
-    light.position.set(0, 0, 1)
+    const light1 = this.lightFactory({
+      color: '#FFFFFF',
+      intensity: 1,
+      position: [0, 0, 1]
+    })
 
-    scene.add(this.mesh, light)
+    const light2 = this.lightFactory({
+      color: '#FFFFFF',
+      intensity: 1,
+      position: [0, 0, -1]
+    })
 
-    camera.position.z = 7
+    this.scene.add(this.mesh, light1, light2)
+
+    this.camera.position.z = 7
 
     this.gui()
 
-    function animation() {
+    const animation = () => {
       requestAnimationFrame(animation)
-      renderer.render(scene, camera)
+      this.renderer.render(this.scene, this.camera)
     }
 
     animation()
 
-    document.body.appendChild(renderer.domElement)
+    this.mouseEvent()
+
+    document.body.appendChild(this.renderer.domElement)
+  }
+
+  private lightFactory(
+    option: {
+      color: string, intensity: number, position: number[]
+    }
+  ) {
+    const {color, intensity, position} = option
+    const [x,y,z] = position
+
+    const light = new three.DirectionalLight(color, intensity)
+    light.position.set(x, y, z)
+
+    return light
   }
 
   private makePlaneSegmentsUnFlatten() {
@@ -57,7 +86,22 @@ class Package {
     }
   }
 
+  private planeSegmentsSetBumpy(bumpySize = 1) {
+    const polygons = this.mesh.geometry.attributes.position.array
+
+    for (let i=2; i<polygons.length;i+=3){
+      // @ts-ignore
+      polygons[i] = Math.random() * bumpySize
+    }
+  }
+
+  private mouseEvent() {
+    const mouse = { x: undefined,  y: undefined}
+
+  }
+
   private gui() {
+    new OrbitControls(this.camera, this.renderer.domElement)
     const gui = new Pane({
       expanded: true,
     })
@@ -112,6 +156,18 @@ class Package {
     planeSize.addInput(this.mesh.geometry.parameters, 'height', planeSizeSetting)
     planeSize.addInput(this.mesh.geometry.parameters, 'widthSegments', planeSegmentsSetting)
     planeSize.addInput(this.mesh.geometry.parameters, 'heightSegments', planeSegmentsSetting)
+
+    const planeBumpySize = { value: 1 }
+    const planeBumpySizeSetting = {
+      min: 0,
+      max: 3,
+      step: 0.1,
+    }
+    plane.addInput(planeBumpySize, 'value', planeBumpySizeSetting)
+      .on('change', (e) => {
+        this.mesh.geometry.dispose()
+        this.planeSegmentsSetBumpy(e.value)
+      })
   }
 }
 

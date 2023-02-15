@@ -24,19 +24,22 @@ class Package {
   private camera!: PerspectiveCamera;
   private renderer!: WebGLRenderer;
   private mesh!: Mesh<PlaneGeometry, MeshPhongMaterial>;
+  private originalPosition!: number[];
+  private segmentsMoveSizes!: number[];
   private raycaster!: Raycaster;
   private mouse: {x: undefined|number, y: undefined|number} = {x: undefined, y: undefined};
+  public clickButton = false
 
   init() {
     this.scene = new three.Scene()
     this.camera = new three.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
     this.renderer = new three.WebGLRenderer()
 
-    this.renderer.setClearColor(new three.Color('#333333'))
+    this.renderer.setClearColor(new three.Color('#333333'), 0.5)
     this.renderer.setSize(window.innerWidth, window.innerHeight)
     this.renderer.setPixelRatio(window.devicePixelRatio)
 
-    const geometry = new three.PlaneGeometry(17, 11, 17, 11)
+    const geometry = new three.PlaneGeometry(850, 480, 150, 100)
     const material = new three.MeshPhongMaterial({
       // color: '#0000FF',
       side: three.DoubleSide,
@@ -44,13 +47,15 @@ class Package {
       vertexColors: true,
     })
     this.mesh = new three.Mesh(geometry, material)
+    this.mesh.position.set(0, 75, 24)
+    this.mesh.rotateX(-0.8)
 
     this.makePlaneSegmentsUnFlatten()
 
     const light1 = this.lightFactory({
       color: '#FFFFFF',
-      intensity: 1,
-      position: [0, 0, 1]
+      intensity: 1.5,
+      position: [0, 1, 1]
     })
 
     const light2 = this.lightFactory({
@@ -61,14 +66,11 @@ class Package {
 
     this.scene.add(this.mesh, light1, light2)
 
-    this.camera.position.z = 7
-
-    this.gui()
+    this.camera.position.z = 140
 
     this.raycaster = new three.Raycaster()
 
-    const animation = () => {
-      requestAnimationFrame(animation)
+    const animation = (t: number) => {
       this.renderer.render(this.scene, this.camera)
 
       this.raycaster.setFromCamera(
@@ -100,14 +102,21 @@ class Package {
           r: initialColors.r,
           g: initialColors.g,
           b: initialColors.b,
-          onUpdate: () => {
+          "onUpdate": () => {
             this.updateColor(color as BufferAttribute, intersects, hoverColors)
           }
         })
       }
+
+      this.makePlaneSegmentsWave(t * 0.005)
+
+      // this.mesh.rotation.x -= 0.01
+      // this.mesh.updateWorldMatrix(true, true)
+
+      requestAnimationFrame(animation)
     }
 
-    animation()
+    animation(0.1)
 
     this.mouseEvent()
 
@@ -125,6 +134,8 @@ class Package {
       this.camera.aspect = window.innerWidth / window.innerHeight
       this.camera.updateProjectionMatrix()
     })
+
+    new OrbitControls(this.camera, this.renderer.domElement)
 
     document.body.appendChild(this.renderer.domElement)
   }
@@ -144,16 +155,23 @@ class Package {
   }
 
   private makePlaneSegmentsUnFlatten() {
-    const polygons = this.mesh.geometry.attributes.position.array
+    const polygons = this.mesh.geometry.attributes.position.array as number[]
+    this.originalPosition = polygons
+    this.segmentsMoveSizes = polygons.map((_) => Math.random() - 0.5)
+
     const colors = []
 
     for (let i=0; i<polygons.length;i+=3){
-      // const x = polygons[i]
-      // const y = polygons[i + 1]
+      const x = polygons[i]
+      const y = polygons[i + 1]
       const z = polygons[i + 2]
 
       // @ts-ignore
-      polygons[i + 2] = z + Math.random()
+      polygons[i] = x + (Math.random() - 0.5)
+      // @ts-ignore
+      polygons[i + 1] = y + (Math.random() - 0.5)
+      // @ts-ignore
+      polygons[i + 2] = z + Math.random() * 6
 
       colors.push(...this.convert255ArrayTo1Array([10, 65, 105]))
     }
@@ -162,6 +180,24 @@ class Package {
       'color',
       new three.BufferAttribute(new Float32Array(colors), 3)
     )
+  }
+
+  private makePlaneSegmentsWave(t: number) {
+    const {array} = this.mesh.geometry.attributes.position
+
+    for (let i=0; i<array.length;i+=3){
+      // @ts-ignore
+      array[i] = this.originalPosition[i]
+        + Math.cos(t + this.segmentsMoveSizes[i]) * 0.02
+      // @ts-ignore
+      array[i + 1] = this.originalPosition[i + 1]
+        + Math.sin(t + this.segmentsMoveSizes[i + 1]) * 0.02
+      // @ts-ignore
+      array[i + 2] = this.originalPosition[i + 2]
+        + Math.cos(t + this.segmentsMoveSizes[i + 2]) * 0.02
+    }
+
+    this.mesh.geometry.attributes.position.needsUpdate = true
   }
 
   private planeSegmentsSetBumpy(bumpySize = 1) {
@@ -212,17 +248,16 @@ class Package {
     color.needsUpdate = true
   }
 
-  private gui() {
-    new OrbitControls(this.camera, this.renderer.domElement)
+  gui() {
     const gui = new Pane({
       expanded: true,
     })
 
     const plane = gui.addFolder({title: 'plane'})
     const planePositionSetting = {
-      min: -5,
-      max: 5,
-      step: 0.01,
+      min: -100,
+      max: 100,
+      step: 0.1,
     }
 
     const planePosition = plane.addFolder({title:"position"})
@@ -232,12 +267,12 @@ class Package {
 
     const planeSizeSetting = {
       min: 0,
-      max: 20,
-      step: 0.01,
+      max: 600,
+      step: 1,
     }
     const planeSegmentsSetting = {
       min: 1,
-      max: 20,
+      max: 600,
       step: 1,
     }
     const planeSize = plane.addFolder({title:"size"})
@@ -269,12 +304,12 @@ class Package {
     planeSize.addInput(this.mesh.geometry.parameters, 'widthSegments', planeSegmentsSetting)
     planeSize.addInput(this.mesh.geometry.parameters, 'heightSegments', planeSegmentsSetting)
 
-    const planeBumpySize = { value: 1 }
+    const planeBumpySize = { value: 6 }
     const planeBumpySizeSetting = {
       label: 'bumpSize',
       min: 0,
-      max: 3,
-      step: 0.1,
+      max: 20,
+      step: 1,
     }
     plane.addInput(planeBumpySize, 'value', planeBumpySizeSetting)
       .on('change', (e) => {
@@ -282,6 +317,23 @@ class Package {
         this.planeSegmentsSetBumpy(e.value)
       })
   }
+
+  clickEvent() {
+    gsap.to(this.mesh.position, {y: 0.5})
+    gsap.to(this.mesh.rotation, {x: -1.3})
+  }
+
+  restore() {
+    gsap.to(this.mesh.position, {y: 75})
+    gsap.to(this.mesh.rotation, {x: -0.8})
+  }
 }
 
-(new Package()).init()
+const world = new Package()
+world.init()
+// world.gui()
+// world.clickEvent()
+document.querySelector('button')?.addEventListener('click', () => {
+  world.clickButton = !world.clickButton
+  world.clickButton ? world.clickEvent() : world.restore()
+})

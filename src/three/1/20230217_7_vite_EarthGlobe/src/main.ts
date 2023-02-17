@@ -1,25 +1,42 @@
 import './style.scss'
 import * as three from 'three'
 import {
-  Mesh, MeshBasicMaterial,
+  Mesh,
   PerspectiveCamera,
   Raycaster,
-  Scene, SphereGeometry,
-  WebGLRenderer
+  Scene, ShaderMaterial, SphereGeometry,
+  WebGLRenderer,
 } from "three";
+// @ts-ignore
+import vertexShader from './shaders/vertex.glsl'
+// @ts-ignore
+import fragmentShader from './shaders/fragment.glsl'
+// @ts-ignore
+import atmosphereShader from './shaders/atmosphere.glsl'
+// @ts-ignore
+import atmosphereFragmentShader from './shaders/atmosphereFragment.glsl'
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 
+// @ts-ignore
 type LengthArray<T, N extends number, R extends T[] = []>
   = number extends N ? T[] :
   R['length'] extends N ? R
     : LengthArray<T, N, [T, ...R]>;
 
+type LightFactoryOption = {
+  color: string;
+  intensity: number;
+  position: number[];
+}
+
 class Package {
   private scene!: Scene;
   private camera!: PerspectiveCamera;
   private renderer!: WebGLRenderer;
-  private mesh!: Mesh<SphereGeometry, MeshBasicMaterial>;
+  // private mesh!: Mesh<SphereGeometry, MeshBasicMaterial>;
   // private raycaster!: Raycaster;
+  private mesh!: Mesh<SphereGeometry, ShaderMaterial>;
+  private atmosphere!: Mesh<SphereGeometry, ShaderMaterial>;
 
   init() {
     this.scene = new three.Scene()
@@ -28,24 +45,44 @@ class Package {
       antialias: true,
     })
 
-    this.renderer.setClearColor(new three.Color('#333333'), 0.5)
+    this.renderer.setClearColor(new three.Color('#000'), 1)
     this.renderer.setSize(window.innerWidth, window.innerHeight)
     this.renderer.setPixelRatio(window.devicePixelRatio * 2)
 
     const geometry = new three.SphereGeometry(5, 50, 50)
-    const material = new three.MeshBasicMaterial({
-      // color: '#FF0000'
-      map: new three.TextureLoader().load('./src/globe.jpeg')
+    // const material = new three.MeshBasicMaterial({
+    //   // color: '#FF0000'
+    //   map: new three.TextureLoader().load('./src/globe.jpeg')
+    // })
+    const material = new three.ShaderMaterial({
+      vertexShader, fragmentShader,
+      uniforms: {
+        globeTexture: {
+          value: new three.TextureLoader().load('./src/globe.jpeg')
+        }
+      }
     })
     this.mesh = new three.Mesh(geometry, material)
 
-    const light1 = this.lightFactory({
-      color: '#FFFFFF',
-      intensity: 1,
-      position: [0, 0, 1]
+    const atmosphereMaterial = new three.ShaderMaterial({
+      vertexShader: atmosphereShader, fragmentShader: atmosphereFragmentShader,
+      transparent: true,
+      blending: three.AdditiveBlending,
+      side: three.BackSide,
     })
+    this.atmosphere = new three.Mesh(geometry, atmosphereMaterial)
+    this.atmosphere.scale.set(1.1, 1.1, 1.1)
+    // this.atmosphere.position.setZ(-8)
 
-    this.scene.add(this.mesh, light1)
+    // const light1 = this.lightFactory({
+    //   color: '#FFFFFF',
+    //   intensity: 1.8,
+    //   position: [-0.5, 0.5, 0.1]
+    // })
+
+    this.scene.add(this.mesh, this.atmosphere)
+    // this.scene.add(this.mesh)
+    // this.scene.add(this.atmosphere)
 
     this.camera.position.z = 20
 
@@ -54,7 +91,7 @@ class Package {
     const animation = (t: number) => {
       this.renderer.render(this.scene, this.camera)
 
-      this.mesh.rotation.y += 0.01
+      this.mesh.rotation.y += 0.02
 
       requestAnimationFrame(animation)
     }
@@ -81,11 +118,8 @@ class Package {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   }
 
-  private lightFactory(
-    option: {
-      color: string, intensity: number, position: number[]
-    }
-  ) {
+  // @ts-ignore
+  private lightFactory(option: LightFactoryOption) {
     const {color, intensity, position} = option
     const [x,y,z] = position
 

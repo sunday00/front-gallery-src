@@ -106,7 +106,7 @@ class Package {
 
     this.stars = new three.Points(starGeometry, starMaterial)
 
-    this.scene.add(this.atmosphere, this.group, this.stars)
+    this.scene.add(this.group, this.atmosphere, this.stars)
 
     this.camera.position.z = 20
 
@@ -118,8 +118,8 @@ class Package {
       this.mesh.rotation.y += 0.002
 
       gsap.to(this.group.rotation, {
-        y: this.mouse?.x! * 0.5,
-        x: this.mouse?.y! * - 0.5,
+        y: this.mouse?.x ? this.mouse?.x * 0.5 : 0,
+        x: this.mouse?.y ? this.mouse?.y * - 0.5 : 0,
         duration: 2,
       })
 

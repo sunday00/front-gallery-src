@@ -1,12 +1,14 @@
 import './style.scss'
 import * as three from 'three'
 import {
+  BufferGeometry,
+  Group,
   Mesh,
-  PerspectiveCamera,
-  Raycaster,
+  PerspectiveCamera, Points, PointsMaterial,
   Scene, ShaderMaterial, SphereGeometry,
   WebGLRenderer,
 } from "three";
+import gsap from "gsap";
 // @ts-ignore
 import vertexShader from './shaders/vertex.glsl'
 // @ts-ignore
@@ -23,30 +25,32 @@ type LengthArray<T, N extends number, R extends T[] = []>
   R['length'] extends N ? R
     : LengthArray<T, N, [T, ...R]>;
 
-type LightFactoryOption = {
-  color: string;
-  intensity: number;
-  position: number[];
-}
-
 class Package {
-  private scene!: Scene;
-  private camera!: PerspectiveCamera;
-  private renderer!: WebGLRenderer;
+  private container!: HTMLDivElement
+  private scene!: Scene
+  private camera!: PerspectiveCamera
+  private renderer!: WebGLRenderer
   // private mesh!: Mesh<SphereGeometry, MeshBasicMaterial>;
   // private raycaster!: Raycaster;
-  private mesh!: Mesh<SphereGeometry, ShaderMaterial>;
-  private atmosphere!: Mesh<SphereGeometry, ShaderMaterial>;
+  private mesh!: Mesh<SphereGeometry, ShaderMaterial>
+  private atmosphere!: Mesh<SphereGeometry, ShaderMaterial>
+  private stars!: Points<BufferGeometry, PointsMaterial>
+  private mouse!: {x?: number, y?: number}
+  private group!: Group
 
   init() {
+    this.container = document.querySelector('.canvas-container')!
     this.scene = new three.Scene()
-    this.camera = new three.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
+    this.camera = new three.PerspectiveCamera(75, this.container.offsetWidth / this.container.offsetHeight, 0.1, 1000)
     this.renderer = new three.WebGLRenderer({
       antialias: true,
+      canvas: document.querySelector('.three') as HTMLCanvasElement
     })
 
-    this.renderer.setClearColor(new three.Color('#000'), 1)
-    this.renderer.setSize(window.innerWidth, window.innerHeight)
+    this.mouse = {x: undefined, y: undefined}
+
+    this.renderer.setClearColor(new three.Color('#111'), 1)
+    this.renderer.setSize(this.container.offsetWidth, this.container.offsetHeight)
     this.renderer.setPixelRatio(window.devicePixelRatio * 2)
 
     const geometry = new three.SphereGeometry(5, 50, 50)
@@ -64,6 +68,9 @@ class Package {
     })
     this.mesh = new three.Mesh(geometry, material)
 
+    this.group = new three.Group()
+    this.group.add(this.mesh)
+
     const atmosphereMaterial = new three.ShaderMaterial({
       vertexShader: atmosphereShader, fragmentShader: atmosphereFragmentShader,
       transparent: true,
@@ -80,61 +87,73 @@ class Package {
     //   position: [-0.5, 0.5, 0.1]
     // })
 
-    this.scene.add(this.mesh, this.atmosphere)
+    // this.scene.add(this.mesh, this.atmosphere)
     // this.scene.add(this.mesh)
-    // this.scene.add(this.atmosphere)
+
+    const starGeometry = new three.BufferGeometry()
+    const starMaterial = new three.PointsMaterial({color: '#fff'})
+
+    const startVertices = []
+    for(let i=0; i < 3000; i++) {
+      const x = (Math.random() - 0.5) * 2000
+      const y = (Math.random() - 0.5) * 2000
+      const z = - Math.random() * 2000
+
+      startVertices.push(x, y, z)
+    }
+
+    starGeometry.setAttribute('position', new three.Float32BufferAttribute(startVertices, 3))
+
+    this.stars = new three.Points(starGeometry, starMaterial)
+
+    this.scene.add(this.atmosphere, this.group, this.stars)
 
     this.camera.position.z = 20
 
     // this.raycaster = new three.Raycaster()
 
-    const animation = (t: number) => {
+    const animation = () => {
       this.renderer.render(this.scene, this.camera)
 
-      this.mesh.rotation.y += 0.02
+      this.mesh.rotation.y += 0.002
+
+      gsap.to(this.group.rotation, {
+        y: this.mouse?.x! * 0.5,
+        x: this.mouse?.y! * - 0.5,
+        duration: 2,
+      })
 
       requestAnimationFrame(animation)
     }
 
-    animation(0.1)
+    animation()
 
     window.addEventListener('resize', () => {
       this.updateRenderer()
 
-      this.camera.aspect = window.innerWidth / window.innerHeight
+      this.camera.aspect = this.container.offsetWidth / this.container.offsetHeight
       this.camera.updateProjectionMatrix()
+    })
+
+    window.addEventListener('mousemove', (e) => {
+      this.mouse.x = (e.clientX / innerWidth ) * 2 - 1
+      this.mouse.y = - (e.clientY / innerHeight) * 2 + 1
     })
 
     new OrbitControls(this.camera, this.renderer.domElement)
 
-    document.body.appendChild(this.renderer.domElement)
+    // document.body.appendChild(this.renderer.domElement)
   }
 
   private updateRenderer() {
     this.renderer.setSize(
-      window.innerWidth, window.innerHeight
+      this.container.offsetWidth, this.container.offsetHeight
     )
 
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-  }
-
-  // @ts-ignore
-  private lightFactory(option: LightFactoryOption) {
-    const {color, intensity, position} = option
-    const [x,y,z] = position
-
-    const light = new three.DirectionalLight(color, intensity)
-    light.position.set(x, y, z)
-
-    return light
-  }
-
-  gui() {
-
   }
 }
 
 const world = new Package()
 world.init()
-// world.gui()
-// world.clickEvent()
+

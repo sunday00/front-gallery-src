@@ -1,0 +1,7 @@
+dialog {
+    max-width: 600px;
+    margin: auto;
+    border: 0;
+    border-radius: 1em;
+    box-shadow: 2px 2px 8px gray;
+}

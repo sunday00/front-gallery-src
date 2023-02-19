@@ -62,7 +62,7 @@ class Package {
       vertexShader, fragmentShader,
       uniforms: {
         globeTexture: {
-          value: new three.TextureLoader().load('./src/globe.jpeg')
+          value: new three.TextureLoader().load('./globe.jpeg')
         }
       }
     })
